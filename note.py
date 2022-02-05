@@ -8,19 +8,17 @@ class Note():
     Stores metadata about a note e.g. content, filename, folder, timestamps.
     """
     def __init__(self, filename):
-        self.content = read_note(filename) 
         self.basename = os.path.basename(filename).replace('.md', '')
-        self.filename = filename
-        self.length = len(self.content)
+        self.content = read_note(filename) 
+        self.yaml = parse_yaml(extract_yaml(self.content))
         self.dates = extract_time(self.content, 'date')
         self.timestamps = extract_time(self.content, 'timestamp')
-        self.folder = None #TODO
-        self.yaml = parse_yaml(extract_yaml(self.content))
         self.title = self.__get_note_title__() # Is this method problematic? Calling self.
         self.datetime = self.__get_note_datetime__()
+        self.filename = filename
     
     def __repr__(self) -> str:
-        return f'Note\nName: {self.basename}\nLength: {self.length}'
+        return f'Note\nName: {self.basename}'
 
     def __get_note_title__(self):
         try: 
@@ -50,6 +48,9 @@ class Note():
                     except (TypeError, ValueError):
                         dt = ''
         return dt
+
+    def __len__(self):
+        return len(self.content)
 
 def read_note(filename):
     """Read markdown note into string."""
