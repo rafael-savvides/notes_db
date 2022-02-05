@@ -2,8 +2,8 @@ import sqlite3
 import os
 from secret import notes_path
 from note import Note
-from app import DATABASE
 
+DATABASE = 'notes.db'
 SCHEMA = 'schema.sql'
 
 def insert_notes_to_db(cursor, notes_path):
@@ -15,8 +15,8 @@ def insert_notes_to_db(cursor, notes_path):
 
 def insert_to_db(cursor, note: Note):
     cursor.execute(
-        "INSERT INTO notes(basename, content, title) VALUES (?, ?, ?)", 
-        (note.basename, note.content, note.title))
+        "INSERT INTO notes(basename, content, title, created) VALUES (?, ?, ?, ?)", 
+        (note.basename, note.content, note.title, note.datetime))
 
 
 if __name__ == "__main__": 

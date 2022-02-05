@@ -12,10 +12,12 @@ class Note():
         self.basename = os.path.basename(filename).replace('.md', '')
         self.filename = filename
         self.length = len(self.content)
-        self.timestamps = extract_timestamps(self.content)
+        self.dates = extract_time(self.content, 'date')
+        self.timestamps = extract_time(self.content, 'timestamp')
         self.folder = None #TODO
         self.yaml = parse_yaml(extract_yaml(self.content))
         self.title = self.__get_note_title__() # Is this method problematic? Calling self.
+        self.datetime = self.__get_note_datetime__()
     
     def __repr__(self) -> str:
         return f'Note\nName: {self.basename}\nLength: {self.length}'
@@ -29,6 +31,25 @@ class Note():
             except AttributeError:
                 title = self.basename
         return title
+    
+    def __get_note_datetime__(self):
+        # Could be cleaned.
+        try: 
+            dt = self.yaml['date']
+        except (KeyError, TypeError):
+            try:
+                # 3rd line is datetime in many notes
+                dt = self.content.splitlines()[2]
+                dt = extract_time(dt, format='timestamp')[0]
+            except (TypeError, IndexError): 
+                try: 
+                    dt = min(self.timestamps)
+                except (TypeError, ValueError):
+                    try: 
+                        dt = min(self.dates)
+                    except (TypeError, ValueError):
+                        dt = ''
+        return dt
 
 def read_note(filename):
     """Read markdown note into string."""
@@ -36,14 +57,15 @@ def read_note(filename):
         content = f.read()
     return content
 
-def extract_timestamps(text):
-    """Extract all timestamps of the form YYYY-MM-DD HH:MM:SS or YYYY-MM-DD. 
-    Return list."""
-    timestamps = re.findall('\d\d\d\d-\d\d-\d\d \d\d:\d\d:\d\d', text)
-    dates = re.findall('\d\d\d\d-\d\d-\d\d', text)
-    #TODO Ensure dates are not duplicated in timestamps. maybe return tuple of both entities?
-    found = dates + timestamps
-    return found
+def extract_time(text, format='date'):
+    """Extract all timestamps of the form YYYY-MM-DD HH:MM:SS (format='timestamp') or YYYY-MM-DD (format='date'). 
+    Return list of strings (unique and sorted)."""
+    if format == 'date':
+        regex = '\d\d\d\d-\d\d-\d\d'
+    if format == 'timestamp':
+        regex = '\d\d\d\d-\d\d-\d\d \d\d:\d\d:\d\d'
+    x = re.findall(regex, text)
+    return list(set(x))
 
 def parse_yaml(text):
     """Parse YAML from string to dict."""
