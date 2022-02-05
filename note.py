@@ -54,7 +54,7 @@ def extract_yaml(text):
     If multiple exist, returns first one. 
     If none exist, returns None."""
     try:
-        y = re.search('(?<=---)(.|\n)+(?=---)', text).group(0).strip()
+        y = re.search('(?<=^---)(.|\n)+(?=---)', text).group(0).strip()
     except AttributeError:
         return None
     return y
