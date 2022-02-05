@@ -1,22 +1,28 @@
 import sqlite3
 import os
 from secret import notes_path
+from note import Note
+from app import DATABASE
 
-def insert_to_db(cursor, text):
-    cursor.execute("INSERT INTO notes (content) VALUES (?)", (text, ))
+SCHEMA = 'schema.sql'
 
 def insert_notes_to_db(cursor, notes_path):
     note_path_list = [p for p in os.listdir(notes_path) if p.endswith('.md')]
     for note_name in note_path_list:
         note_name_abs = os.path.join(notes_path, note_name)
-        with open(note_name_abs, encoding='utf8') as f:
-            content = f.read()
-        insert_to_db(cursor, content)
+        note = Note(note_name_abs)
+        insert_to_db(cursor, note)
+
+def insert_to_db(cursor, note: Note):
+    cursor.execute(
+        "INSERT INTO notes(basename, content, title) VALUES (?, ?, ?)", 
+        (note.basename, note.content, note.title))
+
 
 if __name__ == "__main__": 
-    db_connection = sqlite3.connect('notes.db')
+    db_connection = sqlite3.connect(DATABASE)
 
-    with open('schema.sql') as f:
+    with open(SCHEMA) as f:
         db_connection.executescript(f.read())
 
     cursor = db_connection.cursor()
