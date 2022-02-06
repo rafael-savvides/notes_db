@@ -28,3 +28,10 @@ def index():
     conn.close()
     notes = make_notes(db_notes)
     return render_template('index.html', notes=notes)
+
+@app.route('/summary/', methods=('GET', 'POST'))
+def summary():
+    conn = get_db_connection(DATABASE)
+    notes = conn.execute('SELECT basename FROM notes;').fetchall()
+    conn.close()
+    return render_template('summary.html', notes=notes)
