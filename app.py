@@ -1,8 +1,9 @@
-import sqlite3
-import markdown
-from flask import Flask, render_template, request, flash, redirect, url_for
 from secret import secret_key
 from init_db import DATABASE
+import sqlite3
+from flask import Flask, render_template, request, flash, redirect, url_for
+import mistletoe
+from mathjax import MathJaxRenderer
 
 def get_db_connection(db_file):
     conn = sqlite3.connect(db_file)
@@ -13,12 +14,12 @@ def make_notes(db_notes):
     notes = []
     for note in db_notes:
         note = dict(note)
-        note['content'] = markdown.markdown(note['content'])
+        note['content'] = mistletoe.markdown(note['content'], MathJaxRenderer)
         notes.append(note)
     return notes
 
 
-app = Flask(__name__)
+app = Flask(__name__, static_folder='resources')
 app.config['SECRET_KEY'] = secret_key
 
 @app.route('/')
@@ -27,6 +28,7 @@ def index():
     db_notes = conn.execute('SELECT basename, title, created, content FROM notes;').fetchall()
     conn.close()
     notes = make_notes(db_notes)
+    # notes = notes[0:10]
     return render_template('index.html', notes=notes)
 
 @app.route('/summary/', methods=('GET', 'POST'))
