@@ -37,3 +37,16 @@ def summary():
     notes = conn.execute('SELECT name FROM notes;').fetchall()
     conn.close()
     return render_template('summary.html', notes=notes)
+
+@app.route('/dates/', methods=('GET', 'POST'))
+def dates():
+    #TODO Fix the query (or db?). The dates and notes are misaligned (e.g. says k-means is 2019-08-03 but is 2020-12-18)
+    query = '''select notes.name, notes.content, notes.title, dates.date from dates 
+    inner join notes_dates on dates.id=notes_dates.date_id 
+    inner join notes on notes_dates.note_id = notes.id 
+    order by date;
+    '''
+    conn = get_db_connection(DATABASE)
+    dates_notes = conn.execute(query).fetchall()
+    conn.close()
+    return render_template('dates.html', dates=dates_notes)

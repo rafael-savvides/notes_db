@@ -1,0 +1,12 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<ul class="list-group">
+    {% for date in dates %}
+        <li class="list-group-item">
+            {{ date['date'] |safe }}
+            {{ date['title'] |safe }}
+        </li>
+    {% endfor %}
+</ul>
+{% endblock %}
