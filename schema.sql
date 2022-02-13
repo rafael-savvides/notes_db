@@ -1,11 +1,11 @@
 DROP TABLE IF EXISTS notes;
-DROP TABLE IF EXISTS timestamps;
+DROP TABLE IF EXISTS dates;
+DROP TABLE IF EXISTS notes_dates;
 
 CREATE TABLE notes (
-	id INTEGER PRIMARY KEY AUTOINCREMENT
+	id INTEGER PRIMARY KEY AUTOINCREMENT,
 	basename TEXT NOT NULL, 
-	-- created TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP, 
-	created TEXT,
+	created TIMESTAMP,
 	content TEXT NOT NULL,
 	title TEXT NOT NULL
 );
@@ -17,8 +17,16 @@ CREATE TABLE dates (
 
 CREATE TABLE notes_dates (
 	id INTEGER PRIMARY KEY AUTOINCREMENT, 
-	note_id INTEGER NOT NULL
-	date_id INTEGER NOT NULL
-	FOREIGN KEY note_id REFERENCES notes (id)
-	FOREIGN KEY date_id REFERENCES dates (id)
-)
+	note_id INTEGER NOT NULL,
+	date_id INTEGER NOT NULL,
+	FOREIGN KEY (note_id) REFERENCES notes (id),
+	FOREIGN KEY (date_id) REFERENCES dates (id)
+);
+
+CREATE TABLE notes_links (
+	id INTEGER PRIMARY KEY AUTOINCREMENT, 
+	from_note_id INTEGER NOT NULL,
+	to_note_id INTEGER NOT NULL,
+	FOREIGN KEY (from_note_id) REFERENCES notes (id),
+	FOREIGN KEY (to_note_id) REFERENCES notes (id)
+);
