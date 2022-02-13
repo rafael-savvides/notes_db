@@ -4,7 +4,7 @@
 <ul class="list-group">
     {% for note in notes %}
         <li class="list-group-item">
-            {{ note['basename'] |safe }}
+            {{ note['name'] |safe }}
         </li>
     {% endfor %}
 </ul>

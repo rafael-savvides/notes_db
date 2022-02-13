@@ -25,7 +25,7 @@ app.config['SECRET_KEY'] = secret_key
 @app.route('/')
 def index():
     conn = get_db_connection(DATABASE)
-    db_notes = conn.execute('SELECT basename, title, created, content FROM notes;').fetchall()
+    db_notes = conn.execute('SELECT name, title, created, content FROM notes;').fetchall()
     conn.close()
     notes = make_notes(db_notes)
     # notes = notes[0:10]
@@ -34,6 +34,6 @@ def index():
 @app.route('/summary/', methods=('GET', 'POST'))
 def summary():
     conn = get_db_connection(DATABASE)
-    notes = conn.execute('SELECT basename FROM notes;').fetchall()
+    notes = conn.execute('SELECT name FROM notes;').fetchall()
     conn.close()
     return render_template('summary.html', notes=notes)

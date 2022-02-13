@@ -5,7 +5,7 @@ DROP TABLE IF EXISTS notes_links;
 
 CREATE TABLE notes (
 	id INTEGER PRIMARY KEY AUTOINCREMENT,
-	basename TEXT NOT NULL, 
+	name TEXT NOT NULL, 
 	created TIMESTAMP,
 	content TEXT NOT NULL,
 	title TEXT NOT NULL

@@ -10,8 +10,8 @@ SCHEMA = 'schema.sql'
 def init_notes_db(cursor, notes):
     for note in notes:
         cursor.execute(
-            "INSERT INTO notes(basename, content, title, created) VALUES (?, ?, ?, ?)", 
-            (note.basename, note.content, note.title, note.datetime))
+            "INSERT INTO notes(name, content, title, created) VALUES (?, ?, ?, ?)", 
+            (note.name, note.content, note.title, note.datetime))
 
 def init_dates_db(cursor, dates):
     for date in dates:
