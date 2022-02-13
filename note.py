@@ -16,7 +16,7 @@ class Note():
         self.yaml = parse_yaml(extract_yaml(self.content))
         self.dates = extract_time(self.content, 'date')
         self.timestamps = extract_time(self.content, 'timestamp')
-        self.title = self.__get_note_title__() # Is this method problematic? Calling self.
+        self.title = self.__get_note_title__() 
         self.datetime = self.__get_note_datetime__()
         self.filename = filename
         self.wiki_links = find_wiki_links(self.content)
@@ -68,11 +68,12 @@ class NoteCollection():
     nc.lookup_table.inverse('note13') # 13
     """
 
-    def __init__(self, notes_path, path_to_figures=''):
+    def __init__(self, notes_path):
         self.notes = read_notes(notes_path) # List of notes. Could assign UID in each note.
         self.dir_structure = [] # Tree of Paths. 
         self.dates = []
-        self.path_to_figures = path_to_figures
+        self.path_to_notes = notes_path
+        self.path_to_figures = os.path.join(notes_path, 'figures') 
         self.lookup = bidict({id: name for id, name in zip(self.getattrs('id'), self.getattrs('name'))})
         self.note_links = make_adj_mat(self)
 
@@ -95,7 +96,12 @@ class NoteCollection():
         backlink_ids = np.nonzero(self.note_links[:, id])[0]
         return [self.notes[i] for i in backlink_ids]
 
-
+class MultiNote(Note):
+    """
+    Note that contains multiple notes (e.g. about_x notes).
+    """
+    def __init__(self, filename):
+        super().__init__(filename)
 
 
 def read_note(filename):
