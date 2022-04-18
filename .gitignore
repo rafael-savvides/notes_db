@@ -2,3 +2,6 @@
 *.db
 secret.py
 resources
+.noteignore
+tmp
+.vscode
