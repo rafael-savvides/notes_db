@@ -5,6 +5,14 @@ import re
 from mistletoe import Document
 from bidict import bidict
 import numpy as np
+from dataclasses import dataclass
+from typing import List, Tuple
+import re
+
+@dataclass
+class Entry():
+    header: str
+    content: str
 
 class Note():
     """
@@ -166,3 +174,27 @@ def make_adj_mat(nc: NoteCollection) -> np.array:
                 to_id = nc.lookup.inverse[to_note_name]
                 adj_mat[from_id, to_id] = 1
     return adj_mat
+
+def header_lvl(x: str) -> int or None: 
+    """Count how many # are at the start of the line."""
+    r = re.search('^#+ ', x)
+    return r.span()[1] if r else None
+
+def parse_to_entries(lines: List[str]) -> List[Entry]:
+    """Parse Markdown text into (header, contents)."""
+    lines_new = []
+    accum = ''
+    header = ''
+    for line in lines:
+        if header_lvl(line):
+            lines_new.append(Entry(header, accum))
+            header = line
+            accum = ''
+        else:
+            accum = accum + line
+    lines_new.append(Entry(header, accum)) 
+    return lines_new
+
+def make_entry_tree(entries: List[Entry]):
+    #TODO Add parents to entries. Or fold false entries (entries with no uid) into text.
+    pass
