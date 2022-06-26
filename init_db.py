@@ -3,7 +3,7 @@
 import sqlite3
 import os
 from secret import notes_path
-from note import read_note_path, Document
+from note import read_note_path, Document, basename
 from datetime import datetime, timedelta
 from typing import List, Tuple, Dict
 from pathlib import Path
@@ -21,7 +21,7 @@ TBL_DOCS2DOCS = 'links_docs_docs'
 
 def init_db_documents(cursor, documents: List[Document]):
     for doc in documents:
-        filename = Path(doc.filename).name
+        filename = basename(doc.filename)
         relative_path = str(Path(doc.filename).parent).replace('\\', '/')
         cursor.execute(
             f"INSERT INTO {TBL_DOCS}(filename, date, relative_path) VALUES (?, ?, ?)", 
@@ -33,25 +33,27 @@ def init_db_dates(cursor, dates: List[str]):
 
 def init_db_links_docs_dates(cursor, links: Dict[str, List[str]]):
     for filename, dates in links.items():
-        res = cursor.execute(f"SELECT id FROM {TBL_DOCS} WHERE filename == :d", {'d': filename}).fetchall()
-        if res:
-            doc_id = res[0][0] # First result, first element in tuple (i.e. id). 
-        for date in dates:
-            res = cursor.execute(f"SELECT id FROM {TBL_DATES} WHERE date == :d", {'d': date}).fetchall()
-            if res:
-                date_id = res[0][0]
-                cursor.execute(f"INSERT INTO {TBL_DOCS2DATES}(doc_id, date_id) VALUES (?,?)", (doc_id, date_id))
+        filename = basename(filename)
+        results = cursor.execute(f"SELECT id FROM {TBL_DOCS} WHERE filename == :d", {'d': filename}).fetchall()
+        if results:
+            doc_id = results[0][0] # First result, first element in tuple (i.e. id). 
+            for date in dates:
+                results = cursor.execute(f"SELECT id FROM {TBL_DATES} WHERE date == :d", {'d': date}).fetchall()
+                if results:
+                    date_id = results[0][0]
+                    cursor.execute(f"INSERT INTO {TBL_DOCS2DATES}(doc_id, date_id) VALUES (?,?)", (doc_id, date_id))
 
 def init_db_links_docs_docs(cursor, links: Dict[str, List[str]]):
     for from_file, to_files in links.items():
-        res = cursor.execute(f"SELECT id FROM {TBL_DOCS} WHERE filename == :d", {'d': from_file}).fetchall()
-        if res:
-            from_doc_id = res[0][0] # First result, first element in tuple (i.e. id).
-        for to_file in to_files:
-            res = cursor.execute(f"SELECT id FROM {TBL_DOCS} WHERE filename == :d", {'d': to_file}).fetchall()
-            if res:
-                to_doc_id = res[0][0]
-                cursor.execute(f"INSERT INTO {TBL_DOCS2DOCS}(from_doc_id, to_doc_id) VALUES (?,?)", (from_doc_id, to_doc_id))
+        from_file = basename(from_file)
+        results = cursor.execute(f"SELECT id FROM {TBL_DOCS} WHERE filename == :d", {'d': from_file}).fetchall()
+        if results:
+            from_doc_id = results[0][0] # First result, first element in tuple (i.e. id).
+            for to_file in to_files:
+                results = cursor.execute(f"SELECT id FROM {TBL_DOCS} WHERE filename == :d", {'d': to_file}).fetchall()
+                if results:
+                    to_doc_id = results[0][0]
+                    cursor.execute(f"INSERT INTO {TBL_DOCS2DOCS}(from_doc_id, to_doc_id) VALUES (?,?)", (from_doc_id, to_doc_id))
 
 def make_dates_list(start: str, end: str):
     start_date = datetime.strptime(start, "%Y-%m-%d")

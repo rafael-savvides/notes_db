@@ -89,3 +89,6 @@ def find_wiki_links(text: str) -> List[str]:
 def add_extension(x: str, ext: str):
     """Append a file extension to a filename, if it already does not have it."""
     return x if x.endswith(ext) else x+ext
+
+def basename(x: str):
+    return Path(x).name
