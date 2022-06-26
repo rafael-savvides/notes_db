@@ -2,13 +2,13 @@
 # See SCHEMA for the tables in the database.
 import sqlite3
 import os
-from secret import notes_path
-from note import read_note_path, Document, basename
+from secret import path_to_notes
+from note import read_note_path, Document, Entry, basename
 from datetime import datetime, timedelta
 from typing import List, Tuple, Dict
 from pathlib import Path
 
-ROOT_PATH = notes_path
+ROOT_PATH = path_to_notes
 DATABASE = 'notes.db'
 SCHEMA = 'schema.sql'
 MIN_DATE = "2014-01-01"
@@ -16,6 +16,7 @@ MAX_DATE = str(datetime.now().date())
 
 TBL_DOCS = 'documents'
 TBL_DATES = 'dates'
+TBL_ENTRIES = 'entries'
 TBL_DOCS2DATES = 'links_docs_dates'
 TBL_DOCS2DOCS = 'links_docs_docs'
 
@@ -30,6 +31,16 @@ def init_db_documents(cursor, documents: List[Document]):
 def init_db_dates(cursor, dates: List[str]):
     for date in dates:
         cursor.execute(f"INSERT INTO {TBL_DATES}(date) VALUES (?)", (date,))
+
+def init_db_entries(cursor, entries: Dict[str, List[Entry]]):
+    for filename, entry_list in entries.items():
+        filename = basename(filename)
+        results = cursor.execute(f"SELECT id FROM {TBL_DOCS} WHERE filename == :d", {'d': filename}).fetchall()
+        if results:
+            doc_id = results[0][0] # First result, first element in tuple (i.e. id). 
+            for entry in entry_list:
+                cursor.execute(f"INSERT INTO {TBL_ENTRIES}(doc_id, header, content, date) VALUES (?, ?, ?, ?)", 
+                (doc_id, entry.header, entry.content, entry.date))
 
 def init_db_links_docs_dates(cursor, links: Dict[str, List[str]]):
     for filename, dates in links.items():
@@ -61,7 +72,7 @@ def make_dates_list(start: str, end: str):
     return [start_date + timedelta(days=x) for x in range(0, (end_date-start_date).days)]
 
 if __name__ == "__main__": 
-    docs, links_docs_dates, links_docs_docs = read_note_path(ROOT_PATH)
+    docs, links_docs_dates, links_docs_docs, entries = read_note_path(ROOT_PATH)
     dates = [d.strftime('%Y-%m-%d') for d in make_dates_list(MIN_DATE, MAX_DATE)]
 
     db_connection = sqlite3.connect(DATABASE)
@@ -71,6 +82,8 @@ if __name__ == "__main__":
     init_db_dates(cursor, dates)
     db_connection.commit()
     init_db_documents(cursor, docs)
+    db_connection.commit() 
+    init_db_entries(cursor, entries)
     db_connection.commit() 
     init_db_links_docs_dates(cursor, links_docs_dates)
     db_connection.commit()

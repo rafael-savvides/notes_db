@@ -27,14 +27,17 @@ def read_note_path(path: str) -> Tuple[List[Document], List[str], List[str]]:
     docs = []
     links_docs_dates = {}
     links_docs_docs = {}
+    entries = {}
     for file in files:
         content = read_file(file)
         date = guess_date(content)
         doc = Document(filename=str(file.relative_to(path)).replace('\\', '/'), date=date)
+        # Using relative filename instead of basename to ensure unique keys.
+        entries[doc.filename] = parse_to_entries(content)
         links_docs_dates[doc.filename] = find_dates(content)
         links_docs_docs[doc.filename] = [add_extension(x, '.md') for x in find_wiki_links(content)]
         docs.append(doc)
-    return docs, links_docs_dates, links_docs_docs
+    return docs, links_docs_dates, links_docs_docs, entries
 
 def read_file(file: str, path: str = None):
     file = os.path.join(path, file) if path else file
@@ -47,33 +50,36 @@ def header_lvl(x: str) -> int or None:
     r = re.search('^#+ ', x)
     return r.span()[1] if r else None
 
-def parse_to_entries(lines: List[str]) -> List[Entry]:
+def parse_to_entries(text: str) -> List[Entry]:
     """Parse Markdown text into (header, contents)."""
+    lines = text.split('\n')
     lines_new = []
     accum = ''
     header = ''
     for line in lines:
         if header_lvl(line):
-            lines_new.append(Entry(header, accum, guess_date(accum, header)))
+            e = Entry(header, accum, guess_date(accum, header))
+            if e.header or e.content:
+                lines_new.append(e)
             header = line
             accum = ''
         else:
             accum = accum + line
-    lines_new.append(Entry(header, accum)) 
+    lines_new.append(Entry(header, accum, guess_date(accum, header))) 
     return lines_new
 
 def guess_date(content: str, header: str = None, regex: str = REGEX_DATE):
     """Guess the date of an entry. Uses the first occurring date that begins a 
     line."""
     #TODO Compile regex outside the function.
-    #TODO Simplify
     if header:
-        date_in_header = re.match(regex, header)
+        date_in_header = re.search(regex, header)
         if date_in_header:
             return date_in_header.group()
-    date_in_content = re.search(f'(^{regex})|(\n{regex})', content)
+    regex_cases = f'(^{regex})|((?<=\n){regex})|((?<=date:) ?{regex})'
+    date_in_content = re.search(regex_cases, content)
     if date_in_content:
-        return date_in_content.group().replace('\n', '')
+        return date_in_content.group().strip()
     return None
 
 def find_dates(text: str) -> List[str]:

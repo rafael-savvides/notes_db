@@ -21,6 +21,7 @@ CREATE TABLE entries (
 	doc_id INTEGER NOT NULL, 
 	header TEXT,
 	content TEXT,
+	date TIMESTAMP,
 	FOREIGN KEY (doc_id) REFERENCES documents (id)
 );
 
