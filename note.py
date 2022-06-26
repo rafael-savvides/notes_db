@@ -4,6 +4,7 @@ from mistletoe import Document
 from dataclasses import dataclass
 from typing import List, Tuple
 import re
+from pathlib import Path
 
 TIMESTAMP_REGEX = '\d\d\d\d-\d\d-\d\d \d\d:\d\d:\d\d'
 DATE_REGEX = '\d\d\d\d-\d\d-\d\d'
@@ -21,15 +22,14 @@ class Document():
 
 def read_note_path(path: str) -> Tuple[List[Document], List[str], List[str]]:
     """Read all Markdown files in a folder into a list of Documents, an adjacency list to dates, and an adjacency list to other Documents."""
-    #TODO Make recursive.
-    files = [p for p in os.listdir(path) if p.endswith('.md')]
+    files = list(Path(path).glob('**/*.md'))
     docs = []
     links_docs_dates = {}
     links_docs_docs = {}
     for file in files:
-        content = read_file(file, path)
+        content = read_file(file)
         date = guess_date(content)
-        doc = Document(filename=file, date=date)
+        doc = Document(filename=str(file.relative_to(path)).replace('\\', '/'), date=date)
         links_docs_dates[doc.filename] = find_dates(content)
         links_docs_docs[doc.filename] = find_wiki_links(content)
         docs.append(doc)

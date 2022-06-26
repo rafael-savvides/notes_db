@@ -1,3 +1,5 @@
+# Initializes a sqlite datebase for a folder of Markdown files.
+# See SCHEMA for the tables in the database.
 import sqlite3
 import os
 from secret import notes_path
@@ -6,8 +8,8 @@ from datetime import datetime, timedelta
 from typing import List, Tuple, Dict
 
 ROOT_PATH = notes_path
-DATABASE = 'notes2.db'
-SCHEMA = 'schema2.sql'
+DATABASE = 'notes.db'
+SCHEMA = 'schema.sql'
 MIN_DATE = "2014-01-01"
 MAX_DATE = str(datetime.now().date())
 
@@ -43,6 +45,7 @@ def init_db_links_docs_docs(cursor, links: Dict[str, List[str]]):
         if res:
             from_doc_id = res[0][0] # First result, first element (i.e. id).
         for to_file in to_files:
+            #TODO Check if link contains .md, and add it if not.
             res = cursor.execute(f"SELECT id FROM {TBL_DOCS} WHERE filename == :d", {'d': to_file}).fetchall()
             if res:
                 to_doc_id = res[0][0]
