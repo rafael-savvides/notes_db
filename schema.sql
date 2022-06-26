@@ -12,7 +12,8 @@ CREATE TABLE dates (
 CREATE TABLE documents (
 	id INTEGER PRIMARY KEY AUTOINCREMENT,
 	filename TEXT NOT NULL, 
-	date TIMESTAMP
+	date TIMESTAMP,
+	relative_path TEXT NOT NULL
 );
 
 CREATE TABLE entries (

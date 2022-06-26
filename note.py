@@ -6,8 +6,9 @@ from typing import List, Tuple
 import re
 from pathlib import Path
 
-TIMESTAMP_REGEX = '\d\d\d\d-\d\d-\d\d \d\d:\d\d:\d\d'
-DATE_REGEX = '\d\d\d\d-\d\d-\d\d'
+REGEX_TIMESTAMP = '\d\d\d\d-\d\d-\d\d \d\d:\d\d:\d\d'
+REGEX_DATE = '\d\d\d\d-\d\d-\d\d'
+REGEX_WIKILINK = "(?<=\[\[)[a-zA-Z_]+(?=\]\])"
 
 @dataclass
 class Entry():
@@ -31,7 +32,7 @@ def read_note_path(path: str) -> Tuple[List[Document], List[str], List[str]]:
         date = guess_date(content)
         doc = Document(filename=str(file.relative_to(path)).replace('\\', '/'), date=date)
         links_docs_dates[doc.filename] = find_dates(content)
-        links_docs_docs[doc.filename] = find_wiki_links(content)
+        links_docs_docs[doc.filename] = [add_extension(x, '.md') for x in find_wiki_links(content)]
         docs.append(doc)
     return docs, links_docs_dates, links_docs_docs
 
@@ -61,7 +62,7 @@ def parse_to_entries(lines: List[str]) -> List[Entry]:
     lines_new.append(Entry(header, accum)) 
     return lines_new
 
-def guess_date(content: str, header: str = None, regex: str = DATE_REGEX):
+def guess_date(content: str, header: str = None, regex: str = REGEX_DATE):
     """Guess the date of an entry. Uses the first occurring date that begins a 
     line."""
     #TODO Compile regex outside the function.
@@ -76,12 +77,15 @@ def guess_date(content: str, header: str = None, regex: str = DATE_REGEX):
     return None
 
 def find_dates(text: str) -> List[str]:
-    """Make a list of all dates in a text."""
-    x = re.findall(DATE_REGEX, text)
+    """Find all dates in a text."""
+    x = re.findall(REGEX_DATE, text)
     return list(set(x))
 
 def find_wiki_links(text: str) -> List[str]:
     """Find all [[wiki_links]] in a text."""
-    regex = "(?<=\[\[)[a-zA-Z_]+(?=\]\])"
-    x = re.findall(regex, text)
+    x = re.findall(REGEX_WIKILINK, text)
     return list(set(x))
+
+def add_extension(x: str, ext: str):
+    """Append a file extension to a filename, if it already does not have it."""
+    return x if x.endswith(ext) else x+ext

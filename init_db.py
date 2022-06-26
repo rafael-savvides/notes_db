@@ -6,6 +6,7 @@ from secret import notes_path
 from note import read_note_path, Document
 from datetime import datetime, timedelta
 from typing import List, Tuple, Dict
+from pathlib import Path
 
 ROOT_PATH = notes_path
 DATABASE = 'notes.db'
@@ -20,9 +21,11 @@ TBL_DOCS2DOCS = 'links_docs_docs'
 
 def init_db_documents(cursor, documents: List[Document]):
     for doc in documents:
+        filename = Path(doc.filename).name
+        relative_path = str(Path(doc.filename).parent).replace('\\', '/')
         cursor.execute(
-            f"INSERT INTO {TBL_DOCS}(filename, date) VALUES (?, ?)", 
-            (doc.filename, doc.date))
+            f"INSERT INTO {TBL_DOCS}(filename, date, relative_path) VALUES (?, ?, ?)", 
+            (filename, doc.date, relative_path))
 
 def init_db_dates(cursor, dates: List[str]):
     for date in dates:
@@ -32,7 +35,7 @@ def init_db_links_docs_dates(cursor, links: Dict[str, List[str]]):
     for filename, dates in links.items():
         res = cursor.execute(f"SELECT id FROM {TBL_DOCS} WHERE filename == :d", {'d': filename}).fetchall()
         if res:
-            doc_id = res[0][0] # First result, first element (i.e. id). 
+            doc_id = res[0][0] # First result, first element in tuple (i.e. id). 
         for date in dates:
             res = cursor.execute(f"SELECT id FROM {TBL_DATES} WHERE date == :d", {'d': date}).fetchall()
             if res:
@@ -43,9 +46,8 @@ def init_db_links_docs_docs(cursor, links: Dict[str, List[str]]):
     for from_file, to_files in links.items():
         res = cursor.execute(f"SELECT id FROM {TBL_DOCS} WHERE filename == :d", {'d': from_file}).fetchall()
         if res:
-            from_doc_id = res[0][0] # First result, first element (i.e. id).
+            from_doc_id = res[0][0] # First result, first element in tuple (i.e. id).
         for to_file in to_files:
-            #TODO Check if link contains .md, and add it if not.
             res = cursor.execute(f"SELECT id FROM {TBL_DOCS} WHERE filename == :d", {'d': to_file}).fetchall()
             if res:
                 to_doc_id = res[0][0]
