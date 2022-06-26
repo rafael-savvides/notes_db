@@ -9,10 +9,14 @@ from dataclasses import dataclass
 from typing import List, Tuple
 import re
 
+TIMESTAMP_REGEX = '\d\d\d\d-\d\d-\d\d \d\d:\d\d:\d\d'
+DATE_REGEX = '\d\d\d\d-\d\d-\d\d'
+
 @dataclass
 class Entry():
     header: str
     content: str
+    date: str = None
 
 class Note():
     """
@@ -187,7 +191,7 @@ def parse_to_entries(lines: List[str]) -> List[Entry]:
     header = ''
     for line in lines:
         if header_lvl(line):
-            lines_new.append(Entry(header, accum))
+            lines_new.append(Entry(header, accum, guess_date(accum, header)))
             header = line
             accum = ''
         else:
@@ -198,3 +202,20 @@ def parse_to_entries(lines: List[str]) -> List[Entry]:
 def make_entry_tree(entries: List[Entry]):
     #TODO Add parents to entries. Or fold false entries (entries with no uid) into text.
     pass
+
+def guess_date(content: str, header: str = None):
+    """Guess the date of an entry"""
+    if header:
+        ts_in_header = re.match(TIMESTAMP_REGEX, header)
+        if ts_in_header:
+            return ts_in_header.group()
+        date_in_header = re.match(DATE_REGEX, header)
+        if date_in_header:
+            return date_in_header.group()
+    ts_in_content = re.search(f'(^{TIMESTAMP_REGEX})|(\n{TIMESTAMP_REGEX})', content)
+    if ts_in_content:
+        return ts_in_content.group()
+    date_in_content = re.search(f'(^{DATE_REGEX})|(\n{DATE_REGEX})', content)
+    if date_in_content:
+        return date_in_content.group()
+    return None
