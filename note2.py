@@ -17,21 +17,29 @@ class Entry():
 @dataclass
 class Document():
     filename: str
-    created: str = None
+    date: str = None
 
-def read_documents(path: str) -> List[Document]:
-    """Read all markdown files in a folder into a list of Documents."""
+def read_note_path(path: str) -> Tuple[List[Document], List[str], List[str]]:
+    """Read all Markdown files in a folder into a list of Documents, an adjacency list to dates, and an adjacency list to other Documents."""
     #TODO Make recursive.
     files = [p for p in os.listdir(path) if p.endswith('.md')]
     docs = []
+    links_docs_dates = {}
+    links_docs_docs = {}
     for file in files:
-        file_abs = os.path.join(path, file)
-        with open(file_abs, encoding='utf8') as f:
-            content = f.read()
+        content = read_file(file, path)
         date = guess_date(content)
-        doc = Document(filename=file, created=date)
+        doc = Document(filename=file, date=date)
+        links_docs_dates[doc.filename] = find_dates(content)
+        links_docs_docs[doc.filename] = find_wiki_links(content)
         docs.append(doc)
-    return docs
+    return docs, links_docs_dates, links_docs_docs
+
+def read_file(file: str, path: str = None):
+    file = os.path.join(path, file) if path else file
+    with open(file, encoding='utf8') as f:
+        content = f.read()
+    return content
 
 def header_lvl(x: str) -> int or None: 
     """Count how many # are at the start of the line."""
@@ -53,19 +61,27 @@ def parse_to_entries(lines: List[str]) -> List[Entry]:
     lines_new.append(Entry(header, accum)) 
     return lines_new
 
-def guess_date(content: str, header: str = None):
-    """Guess the date of an entry"""
+def guess_date(content: str, header: str = None, regex: str = DATE_REGEX):
+    """Guess the date of an entry. Uses the first occurring date that begins a 
+    line."""
+    #TODO Compile regex outside the function.
+    #TODO Simplify
     if header:
-        ts_in_header = re.match(TIMESTAMP_REGEX, header)
-        if ts_in_header:
-            return ts_in_header.group()
-        date_in_header = re.match(DATE_REGEX, header)
+        date_in_header = re.match(regex, header)
         if date_in_header:
             return date_in_header.group()
-    ts_in_content = re.search(f'(^{TIMESTAMP_REGEX})|(\n{TIMESTAMP_REGEX})', content)
-    if ts_in_content:
-        return ts_in_content.group()
-    date_in_content = re.search(f'(^{DATE_REGEX})|(\n{DATE_REGEX})', content)
+    date_in_content = re.search(f'(^{regex})|(\n{regex})', content)
     if date_in_content:
-        return date_in_content.group()
+        return date_in_content.group().replace('\n', '')
     return None
+
+def find_dates(text: str) -> List[str]:
+    """Make a list of all dates in a text."""
+    x = re.findall(DATE_REGEX, text)
+    return list(set(x))
+
+def find_wiki_links(text: str) -> List[str]:
+    """Find all [[wiki_links]] in a text."""
+    regex = "(?<=\[\[)[a-zA-Z_]+(?=\]\])"
+    x = re.findall(regex, text)
+    return list(set(x))
