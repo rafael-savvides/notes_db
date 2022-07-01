@@ -14,18 +14,20 @@ SCHEMA = 'schema.sql'
 MIN_DATE = "2014-01-01"
 MAX_DATE = str(datetime.now().date())
 
-TBL_DOCS = 'documents'
-TBL_DATES = 'dates'
-TBL_ENTRIES = 'entries'
-TBL_DOCS2DATES = 'links_docs_dates'
-TBL_DOCS2DOCS = 'links_docs_docs'
+TBLS = {
+    'documents': 'documents',
+    'dates': 'dates',
+    'entries': 'entries', 
+    'links_docs_dates': 'links_docs_dates',
+    'links_docs_docs': 'links_docs_docs'
+}
 
 def init_db_documents(cursor, documents: List[Document]):
     for doc in documents:
         filename = basename(doc.filename)
         relative_path = str(Path(doc.filename).parent).replace('\\', '/')
         cursor.execute(
-            f"INSERT INTO {TBL_DOCS}(filename, date, relative_path) VALUES (?, ?, ?)", 
+            f"INSERT INTO {TBLS['documents']}(filename, date, relative_path) VALUES (?, ?, ?)", 
             (filename, doc.date, relative_path))
 
 def init_db_dates(cursor, dates: List[str]):
@@ -35,36 +37,36 @@ def init_db_dates(cursor, dates: List[str]):
 def init_db_entries(cursor, entries: Dict[str, List[Entry]]):
     for filename, entry_list in entries.items():
         filename = basename(filename)
-        results = cursor.execute(f"SELECT id FROM {TBL_DOCS} WHERE filename == :d", {'d': filename}).fetchall()
+        results = cursor.execute(f"SELECT id FROM {TBLS['documents']} WHERE filename == :d", {'d': filename}).fetchall()
         if results:
             doc_id = results[0][0] # First result, first element in tuple (i.e. id). 
             for entry in entry_list:
-                cursor.execute(f"INSERT INTO {TBL_ENTRIES}(doc_id, header, content, date) VALUES (?, ?, ?, ?)", 
+                cursor.execute(f"INSERT INTO {TBLS['entries']}(doc_id, header, content, date) VALUES (?, ?, ?, ?)", 
                 (doc_id, entry.header, entry.content, entry.date))
 
 def init_db_links_docs_dates(cursor, links: Dict[str, List[str]]):
     for filename, dates in links.items():
         filename = basename(filename)
-        results = cursor.execute(f"SELECT id FROM {TBL_DOCS} WHERE filename == :d", {'d': filename}).fetchall()
+        results = cursor.execute(f"SELECT id FROM {TBLS['documents']} WHERE filename == :d", {'d': filename}).fetchall()
         if results:
             doc_id = results[0][0] # First result, first element in tuple (i.e. id). 
             for date in dates:
-                results = cursor.execute(f"SELECT id FROM {TBL_DATES} WHERE date == :d", {'d': date}).fetchall()
+                results = cursor.execute(f"SELECT id FROM {TBLS['dates']} WHERE date == :d", {'d': date}).fetchall()
                 if results:
                     date_id = results[0][0]
-                    cursor.execute(f"INSERT INTO {TBL_DOCS2DATES}(doc_id, date_id) VALUES (?,?)", (doc_id, date_id))
+                    cursor.execute(f"INSERT INTO {TBLS['links_docs_dates']}(doc_id, date_id) VALUES (?,?)", (doc_id, date_id))
 
 def init_db_links_docs_docs(cursor, links: Dict[str, List[str]]):
     for from_file, to_files in links.items():
         from_file = basename(from_file)
-        results = cursor.execute(f"SELECT id FROM {TBL_DOCS} WHERE filename == :d", {'d': from_file}).fetchall()
+        results = cursor.execute(f"SELECT id FROM {TBLS['documents']} WHERE filename == :d", {'d': from_file}).fetchall()
         if results:
             from_doc_id = results[0][0] # First result, first element in tuple (i.e. id).
             for to_file in to_files:
-                results = cursor.execute(f"SELECT id FROM {TBL_DOCS} WHERE filename == :d", {'d': to_file}).fetchall()
+                results = cursor.execute(f"SELECT id FROM {TBLS['documents']} WHERE filename == :d", {'d': to_file}).fetchall()
                 if results:
                     to_doc_id = results[0][0]
-                    cursor.execute(f"INSERT INTO {TBL_DOCS2DOCS}(from_doc_id, to_doc_id) VALUES (?,?)", (from_doc_id, to_doc_id))
+                    cursor.execute(f"INSERT INTO {TBLS['links_docs_docs']}(from_doc_id, to_doc_id) VALUES (?,?)", (from_doc_id, to_doc_id))
 
 def make_dates_list(start: str, end: str):
     start_date = datetime.strptime(start, "%Y-%m-%d")
