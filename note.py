@@ -1,6 +1,5 @@
 import os
 import re
-from mistletoe import Document
 from dataclasses import dataclass
 from typing import List, Tuple
 import re
@@ -8,7 +7,7 @@ from pathlib import Path
 
 REGEX_TIMESTAMP = "\d\d\d\d-\d\d-\d\d \d\d:\d\d:\d\d"
 REGEX_DATE = "\d\d\d\d-\d\d-\d\d"
-REGEX_WIKILINK = "(?<=\[\[)[a-zA-Z_]+(?=\]\])"
+REGEX_MDLINK = "(?<=\]\()[a-zA-Z0-9_\/\.]+\.md(?=\))"
 
 
 @dataclass
@@ -40,9 +39,7 @@ def read_note_path(path: str) -> Tuple[List[Document], List[str], List[str]]:
         # Using relative filename instead of basename to ensure unique keys.
         entries[doc.filename] = parse_to_entries(content)
         links_docs_dates[doc.filename] = find_dates(content)
-        links_docs_docs[doc.filename] = [
-            add_extension(x, ".md") for x in find_wiki_links(content)
-        ]
+        links_docs_docs[doc.filename] = find_md_links(content)
         docs.append(doc)
     return docs, links_docs_dates, links_docs_docs, entries
 
@@ -99,9 +96,9 @@ def find_dates(text: str) -> List[str]:
     return list(set(x))
 
 
-def find_wiki_links(text: str) -> List[str]:
-    """Find all [[wiki_links]] in a text."""
-    x = re.findall(REGEX_WIKILINK, text)
+def find_md_links(text: str) -> List[str]:
+    """Find all Markdown links in a text."""
+    x = re.findall(REGEX_MDLINK, text)
     return list(set(x))
 
 
