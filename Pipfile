@@ -9,6 +9,8 @@ mistletoe = "*"
 mathjax = "*"
 
 [dev-packages]
+ipython = "*"
+ipykernel = "*"
 
 [requires]
 python_version = "3.10"
