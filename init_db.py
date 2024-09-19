@@ -1,4 +1,3 @@
-# TODO Can the db be initialized differently? e.g. sql files.
 # Initializes a sqlite datebase for a folder of Markdown files.
 # See schema.sql for the tables in the database.
 import sqlite3
