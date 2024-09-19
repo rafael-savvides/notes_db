@@ -1,20 +1,13 @@
+# TODO Can the db be initialized differently? e.g. sql files.
 # Initializes a sqlite datebase for a folder of Markdown files.
-# See SCHEMA for the tables in the database.
+# See schema.sql for the tables in the database.
 import sqlite3
 import os
-from secret import path_to_notes
 from note import read_note_path, Document, Entry, basename
 from datetime import datetime, timedelta
-from typing import List, Tuple, Dict
 from pathlib import Path
 
-ROOT_PATH = path_to_notes
-DATABASE = "notes.db"
-SCHEMA = "schema.sql"
-MIN_DATE = "2014-01-01"
-MAX_DATE = str(datetime.now().date())
-
-TBLS = {
+TABLES = {
     "documents": "documents",
     "dates": "dates",
     "entries": "entries",
@@ -23,61 +16,64 @@ TBLS = {
 }
 
 
-def init_db_documents(cursor, documents: List[Document]):
+def init_db_documents(cursor, documents: list[Document]):
     for doc in documents:
         filename = basename(doc.filename)
         relative_path = str(Path(doc.filename).parent).replace("\\", "/")
         cursor.execute(
-            f"INSERT INTO {TBLS['documents']}(filename, date, relative_path) VALUES (?, ?, ?)",
+            f"INSERT INTO {TABLES['documents']}(filename, date, relative_path) VALUES (?, ?, ?)",
             (filename, doc.date, relative_path),
         )
 
 
-def init_db_dates(cursor, dates: List[str]):
+def init_db_dates(cursor, dates: list[str]):
     for date in dates:
-        cursor.execute(f"INSERT INTO {TBLS['dates']}(date) VALUES (?)", (date,))
+        cursor.execute(f"INSERT INTO {TABLES['dates']}(date) VALUES (?)", (date,))
 
 
-def init_db_entries(cursor, entries: Dict[str, List[Entry]]):
+def init_db_entries(cursor, entries: dict[str, list[Entry]]):
     for filename, entry_list in entries.items():
         filename = basename(filename)
         results = cursor.execute(
-            f"SELECT id FROM {TBLS['documents']} WHERE filename == :d", {"d": filename}
+            f"SELECT id FROM {TABLES['documents']} WHERE filename == :d",
+            {"d": filename},
         ).fetchall()
         if results:
             doc_id = results[0][0]  # First result, first element in tuple (i.e. id).
             for entry in entry_list:
                 cursor.execute(
-                    f"INSERT INTO {TBLS['entries']}(doc_id, header, content, date) VALUES (?, ?, ?, ?)",
+                    f"INSERT INTO {TABLES['entries']}(doc_id, header, content, date) VALUES (?, ?, ?, ?)",
                     (doc_id, entry.header, entry.content, entry.date),
                 )
 
 
-def init_db_links_docs_dates(cursor, links: Dict[str, List[str]]):
+def init_db_links_docs_dates(cursor, links: dict[str, list[str]]):
     for filename, dates in links.items():
         filename = basename(filename)
         results = cursor.execute(
-            f"SELECT id FROM {TBLS['documents']} WHERE filename == :d", {"d": filename}
+            f"SELECT id FROM {TABLES['documents']} WHERE filename == :d",
+            {"d": filename},
         ).fetchall()
         if results:
             doc_id = results[0][0]  # First result, first element in tuple (i.e. id).
             for date in dates:
                 results = cursor.execute(
-                    f"SELECT id FROM {TBLS['dates']} WHERE date == :d", {"d": date}
+                    f"SELECT id FROM {TABLES['dates']} WHERE date == :d", {"d": date}
                 ).fetchall()
                 if results:
                     date_id = results[0][0]
                     cursor.execute(
-                        f"INSERT INTO {TBLS['links_docs_dates']}(doc_id, date_id) VALUES (?,?)",
+                        f"INSERT INTO {TABLES['links_docs_dates']}(doc_id, date_id) VALUES (?,?)",
                         (doc_id, date_id),
                     )
 
 
-def init_db_links_docs_docs(cursor, links: Dict[str, List[str]]):
+def init_db_links_docs_docs(cursor, links: dict[str, list[str]]):
     for from_file, to_files in links.items():
         from_file = basename(from_file)
         results = cursor.execute(
-            f"SELECT id FROM {TBLS['documents']} WHERE filename == :d", {"d": from_file}
+            f"SELECT id FROM {TABLES['documents']} WHERE filename == :d",
+            {"d": from_file},
         ).fetchall()
         if results:
             from_doc_id = results[0][
@@ -85,13 +81,13 @@ def init_db_links_docs_docs(cursor, links: Dict[str, List[str]]):
             ]  # First result, first element in tuple (i.e. id).
             for to_file in to_files:
                 results = cursor.execute(
-                    f"SELECT id FROM {TBLS['documents']} WHERE filename == :d",
+                    f"SELECT id FROM {TABLES['documents']} WHERE filename == :d",
                     {"d": to_file},
                 ).fetchall()
                 if results:
                     to_doc_id = results[0][0]
                     cursor.execute(
-                        f"INSERT INTO {TBLS['links_docs_docs']}(from_doc_id, to_doc_id) VALUES (?,?)",
+                        f"INSERT INTO {TABLES['links_docs_docs']}(from_doc_id, to_doc_id) VALUES (?,?)",
                         (from_doc_id, to_doc_id),
                     )
 
@@ -105,21 +101,35 @@ def make_dates_list(start: str, end: str):
 
 
 if __name__ == "__main__":
-    docs, links_docs_dates, links_docs_docs, entries = read_note_path(ROOT_PATH)
+    import json
+
+    with open("config.json") as f:
+        config = json.load(f)
+
+    SCHEMA_PATH = "schema.sql"
+    DB_PATH = os.getenv("NOTES_DB_PATH", "notes.db")
+
+    NOTES_PATH = config["path_to_notes"]
+    MIN_DATE = config["min_date"]
+    MAX_DATE = (
+        config["max_date"] if config["max_date"] != "" else str(datetime.now().date())
+    )
+
+    docs, links_docs_dates, links_docs_docs, entries = read_note_path(NOTES_PATH)
     dates = [d.strftime("%Y-%m-%d") for d in make_dates_list(MIN_DATE, MAX_DATE)]
 
-    db_connection = sqlite3.connect(DATABASE)
-    with open(SCHEMA) as f:
-        db_connection.executescript(f.read())
-    cursor = db_connection.cursor()
+    db_conn = sqlite3.connect(DB_PATH)
+    with open(SCHEMA_PATH) as f:
+        db_conn.executescript(f.read())
+    cursor = db_conn.cursor()
     init_db_dates(cursor, dates)
-    db_connection.commit()
+    db_conn.commit()
     init_db_documents(cursor, docs)
-    db_connection.commit()
+    db_conn.commit()
     init_db_entries(cursor, entries)
-    db_connection.commit()
+    db_conn.commit()
     init_db_links_docs_dates(cursor, links_docs_dates)
-    db_connection.commit()
+    db_conn.commit()
     init_db_links_docs_docs(cursor, links_docs_docs)
-    db_connection.commit()
-    db_connection.close()
+    db_conn.commit()
+    db_conn.close()

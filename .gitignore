@@ -1,6 +1,6 @@
 *.pyc
 *.db
-secret.py
+config.json
 resources
 .noteignore
 tmp

@@ -1,7 +1,6 @@
 import os
 import re
 from dataclasses import dataclass
-from typing import List, Tuple
 import re
 from pathlib import Path
 
@@ -23,7 +22,7 @@ class Document:
     date: str = None
 
 
-def read_note_path(path: str) -> Tuple[List[Document], List[str], List[str]]:
+def read_note_path(path: str) -> tuple[list[Document], list[str], list[str]]:
     """Read all Markdown files in a folder into a list of Documents, an adjacency list to dates, and an adjacency list to other Documents."""
     files = list(Path(path).glob("**/*.md"))
     docs = []
@@ -51,13 +50,13 @@ def read_file(file: str, path: str = None):
     return content
 
 
-def header_lvl(x: str) -> int or None:
+def header_lvl(x: str) -> int | None:
     """Count how many # are at the start of the line."""
     r = re.search("^#+ ", x)
     return r.span()[1] if r else None
 
 
-def parse_to_entries(text: str) -> List[Entry]:
+def parse_to_entries(text: str) -> list[Entry]:
     """Parse Markdown text into (header, contents)."""
     lines = text.split("\n")
     lines_new = []
@@ -90,13 +89,13 @@ def guess_date(content: str, header: str = None, regex: str = REGEX_DATE):
     return None
 
 
-def find_dates(text: str) -> List[str]:
+def find_dates(text: str) -> list[str]:
     """Find all dates in a text."""
     x = re.findall(REGEX_DATE, text)
     return list(set(x))
 
 
-def find_md_links(text: str) -> List[str]:
+def find_md_links(text: str) -> list[str]:
     """Find all Markdown links in a text."""
     x = re.findall(REGEX_MDLINK, text)
     return list(set(x))

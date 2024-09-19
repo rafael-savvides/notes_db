@@ -1,20 +1,21 @@
 # Notes UI
 
-
-# Flask App
-
-Run like this: 
+Serve a folder of markdown files as a Flask app.
 
 ```bash
-./run_app.sh
+pipenv install 
+pipenv shell
+
+python init_db.py # Update the sqlite database.
+
+./run_app.sh # Run Flask app.
 ```
 
-Set up `secret.py` to have: 
+Set up `config.json` to have: 
 
-- `notes_path`: path to folder including markdown files to be served
-- `secret_key`: any secret string 
-- `path_to_mathjax_js`: (optional) path to MathJax.js (the path should be in the `static_folder` defined in `Flask()`). If missing, uses MathJax CDN from the web to render Latex.
+- `path_to_notes`: path to folder including markdown files to be served
 
-# SQLite database
+Environment variables: 
 
-Update the database by running `init_db.py`.
+- `SECRET_KEY`: required by Flask for signing cookies.
+- `PATH_TO_MATHJAX_JS`: (optional) path to MathJax.js to render Latex. The path should be in the `static_folder` defined in `Flask()`. If missing, uses MathJax CDN from the web.
