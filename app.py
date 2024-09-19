@@ -22,7 +22,7 @@ def make_notes(db_notes):
     notes = []
     for note in db_notes:
         note = dict(note)
-        note["content"] = mistletoe.markdown(note["content"], MathJaxRenderer)
+        note["content"] = mistletoe.markdown(note["content"])
         notes.append(note)
     return notes
 
@@ -30,13 +30,16 @@ def make_notes(db_notes):
 # TODO Fix queries below. Change notes to documents, name to filename. title doesnt exist.
 @app.route("/")
 def index():
-    conn = get_db_connection(DB_PATH)
-    db_notes = conn.execute(
-        "SELECT name, title, created, content FROM notes;"
-    ).fetchall()
-    conn.close()
+    with get_db_connection(DB_PATH) as conn:
+        db_notes = conn.execute(
+            """
+            SELECT e.doc_id, d.filename, d.relative_path, e.header, e.content, e.date 
+            FROM entries e 
+            JOIN documents d ON e.doc_id = d.id
+            """
+        ).fetchall()
     notes = make_notes(db_notes)
-    # notes = notes[0:10]
+    # notes = notes[-10:]
     return render_template("index.html", notes=notes)
 
 
