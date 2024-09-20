@@ -13,7 +13,7 @@ REGEX_MDLINK = "(?<=\]\()[a-zA-Z0-9_\/\.]+\.md(?=\))"
 class Document:
     """A markdown document."""
 
-    filename: str
+    path: str | Path
     date: str = None
 
 
@@ -21,6 +21,7 @@ class Document:
 class Entry:
     """An entry in a markdown document."""
 
+    # TODO What if there are no headers? Should the default header and content be ""?
     header: str
     content: str
     date: str = None
@@ -55,9 +56,8 @@ def read_note_path(
             content = f.read()
         date = guess_date(content)
         # Using relative filename instead of basename to ensure unique keys.
-        doc = Document(
-            filename=str(file.relative_to(path)).replace("\\", "/"), date=date
-        )
+        relative_filepath = Path(str(file.relative_to(path)).replace("\\", "/"))
+        doc = Document(path=relative_filepath, date=date)
         entries[doc] = parse_to_entries(content)
         links_docs_dates[doc] = list(set(re.findall(REGEX_DATE, content)))
         links_docs_docs[doc] = list(set(re.findall(REGEX_MDLINK, content)))
