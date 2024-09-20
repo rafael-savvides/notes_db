@@ -2,7 +2,7 @@
 # See schema.sql for the tables in the database.
 import sqlite3
 import os
-from note import read_note_path, Document, Entry, basename
+from note import read_note_path, Document, Entry
 from datetime import datetime, timedelta
 from pathlib import Path
 
@@ -17,7 +17,7 @@ TABLES = {
 
 def init_db_documents(cursor, documents: list[Document]):
     for doc in documents:
-        filename = basename(doc.filename)
+        filename = Path(doc.filename).name
         relative_path = str(Path(doc.filename).parent).replace("\\", "/")
         cursor.execute(
             f"INSERT INTO {TABLES['documents']}(filename, date, relative_path) VALUES (?, ?, ?)",
@@ -32,7 +32,7 @@ def init_db_dates(cursor, dates: list[str]):
 
 def init_db_entries(cursor, entries: dict[str, list[Entry]]):
     for filename, entry_list in entries.items():
-        filename = basename(filename)
+        filename = Path(filename).name
         results = cursor.execute(
             f"SELECT id FROM {TABLES['documents']} WHERE filename == :d",
             {"d": filename},
@@ -48,7 +48,7 @@ def init_db_entries(cursor, entries: dict[str, list[Entry]]):
 
 def init_db_links_docs_dates(cursor, links: dict[str, list[str]]):
     for filename, dates in links.items():
-        filename = basename(filename)
+        filename = Path(filename).name
         results = cursor.execute(
             f"SELECT id FROM {TABLES['documents']} WHERE filename == :d",
             {"d": filename},
@@ -69,7 +69,7 @@ def init_db_links_docs_dates(cursor, links: dict[str, list[str]]):
 
 def init_db_links_docs_docs(cursor, links: dict[str, list[str]]):
     for from_file, to_files in links.items():
-        from_file = basename(from_file)
+        from_file = Path(from_file).name
         results = cursor.execute(
             f"SELECT id FROM {TABLES['documents']} WHERE filename == :d",
             {"d": from_file},
@@ -100,19 +100,15 @@ def make_dates_list(start: str, end: str):
 
 
 if __name__ == "__main__":
-    import json
+    import os
+    import sys
+    from pathlib import Path
 
-    with open("config.json") as f:
-        config = json.load(f)
-
+    NOTES_PATH = Path(sys.argv[1])
     SCHEMA_PATH = "schema.sql"
     DB_PATH = os.getenv("NOTES_DB_PATH", "notes.db")
-
-    NOTES_PATH = config["path_to_notes"]
-    MIN_DATE = config["min_date"]
-    MAX_DATE = (
-        config["max_date"] if config["max_date"] != "" else str(datetime.now().date())
-    )
+    MIN_DATE = "2000-01-01"
+    MAX_DATE = str(datetime.now().date())
 
     docs, links_docs_dates, links_docs_docs, entries = read_note_path(NOTES_PATH)
     dates = [d.strftime("%Y-%m-%d") for d in make_dates_list(MIN_DATE, MAX_DATE)]
