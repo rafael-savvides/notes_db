@@ -23,11 +23,10 @@ def init_tbl_documents(cursor: sqlite3.Cursor, documents: list[Document]):
         documents: list of Documents
     """
     for doc in documents:
-        filename = Path(doc.path).name
-        relative_path = str(Path(doc.path).parent).replace("\\", "/")
+        relative_path = str(doc.path.parent).replace("\\", "/")
         cursor.execute(
             f"INSERT INTO {TABLES['documents']}(filename, date, relative_path) VALUES (?, ?, ?)",
-            (filename, doc.date, relative_path),
+            (doc.path.name, doc.date, relative_path),
         )
 
 
@@ -50,10 +49,9 @@ def init_tbl_entries(cursor: sqlite3.Cursor, entries: dict[Document, list[Entry]
         entries: Document-Entry dictionary
     """
     for doc, entry_list in entries.items():
-        filename = Path(doc.path).name
         results = cursor.execute(
             f"SELECT id FROM {TABLES['documents']} WHERE filename == :d",
-            {"d": filename},
+            {"d": doc.path.name},
         ).fetchall()
         if results:
             doc_id = results[0][0]  # First result, first element in tuple (i.e. id).
@@ -72,10 +70,9 @@ def init_tbl_links_docs_dates(cursor: sqlite3.Cursor, links: dict[Document, list
         links: Document-Date dictionary
     """
     for doc, dates in links.items():
-        filename = Path(doc.path).name
         results = cursor.execute(
             f"SELECT id FROM {TABLES['documents']} WHERE filename == :d",
-            {"d": filename},
+            {"d": doc.path.name},
         ).fetchall()
         if results:
             doc_id = results[0][0]  # First result, first element in tuple (i.e. id).
@@ -99,7 +96,7 @@ def init_tbl_links_docs_docs(cursor: sqlite3.Cursor, links: dict[Document, list[
         links: Document-Links dictionary
     """
     for doc, to_files in links.items():
-        from_file = Path(doc.path).name
+        from_file = doc.path.name
         results = cursor.execute(
             f"SELECT id FROM {TABLES['documents']} WHERE filename == :d",
             {"d": from_file},
@@ -141,7 +138,6 @@ def make_dates_list(start: str, end: str):
 if __name__ == "__main__":
     import os
     import sys
-    from pathlib import Path
 
     NOTES_PATH = Path(sys.argv[1])
     SCHEMA_PATH = "schema.sql"

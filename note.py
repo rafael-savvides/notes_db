@@ -13,7 +13,7 @@ REGEX_MDLINK = "(?<=\]\()[a-zA-Z0-9_\/\.]+\.md(?=\))"
 class Document:
     """A markdown document."""
 
-    path: str | Path
+    path: Path
     date: str = None
 
 
