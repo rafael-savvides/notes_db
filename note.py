@@ -9,45 +9,60 @@ REGEX_DATE = "\d\d\d\d-\d\d-\d\d"
 REGEX_MDLINK = "(?<=\]\()[a-zA-Z0-9_\/\.]+\.md(?=\))"
 
 
+@dataclass(frozen=True, eq=True)
+class Document:
+    """A markdown document."""
+
+    filename: str
+    date: str = None
+
+
 @dataclass
 class Entry:
+    """An entry in a markdown document."""
+
     header: str
     content: str
     date: str = None
 
 
-@dataclass
-class Document:
-    filename: str
-    date: str = None
+def read_note_path(
+    path: str,
+) -> tuple[
+    list[Document],
+    dict[Document, list[str]],
+    dict[Document, list[str]],
+    dict[Document, list[Entry]],
+]:
+    """Read all Markdown files in a folder
 
+    Args:
+        path: Path to a folder with Markdown files.
 
-def read_note_path(path: str) -> tuple[list[Document], list[str], list[str]]:
-    """Read all Markdown files in a folder into a list of Documents, an adjacency list to dates, and an adjacency list to other Documents."""
+    Returns:
+        - a list of Documents
+        - an adjacency list {Document: [dates]}
+        - an adjacency list {Document: [md_links]}
+        - a dict of Entries, {Document: [Entries]}
+    """
     files = list(Path(path).glob("**/*.md"))
     docs = []
     links_docs_dates = {}
     links_docs_docs = {}
     entries = {}
     for file in files:
-        content = read_file(file)
+        with open(file, encoding="utf8") as f:
+            content = f.read()
         date = guess_date(content)
+        # Using relative filename instead of basename to ensure unique keys.
         doc = Document(
             filename=str(file.relative_to(path)).replace("\\", "/"), date=date
         )
-        # Using relative filename instead of basename to ensure unique keys.
-        entries[doc.filename] = parse_to_entries(content)
-        links_docs_dates[doc.filename] = find_dates(content)
-        links_docs_docs[doc.filename] = find_md_links(content)
+        entries[doc] = parse_to_entries(content)
+        links_docs_dates[doc] = find_dates(content)
+        links_docs_docs[doc] = find_md_links(content)
         docs.append(doc)
     return docs, links_docs_dates, links_docs_docs, entries
-
-
-def read_file(file: str, path: str = None):
-    file = os.path.join(path, file) if path else file
-    with open(file, encoding="utf8") as f:
-        content = f.read()
-    return content
 
 
 def header_lvl(x: str) -> int | None:
@@ -99,8 +114,3 @@ def find_md_links(text: str) -> list[str]:
     """Find all Markdown links in a text."""
     x = re.findall(REGEX_MDLINK, text)
     return list(set(x))
-
-
-def add_extension(x: str, ext: str):
-    """Append a file extension to a filename, if it already does not have it."""
-    return x if x.endswith(ext) else x + ext

@@ -15,7 +15,13 @@ TABLES = {
 }
 
 
-def init_db_documents(cursor, documents: list[Document]):
+def init_tbl_documents(cursor: sqlite3.Cursor, documents: list[Document]):
+    """Create `documents` table
+
+    Args:
+        cursor: sqlite3 Cursor
+        documents: list of Documents
+    """
     for doc in documents:
         filename = Path(doc.filename).name
         relative_path = str(Path(doc.filename).parent).replace("\\", "/")
@@ -25,14 +31,26 @@ def init_db_documents(cursor, documents: list[Document]):
         )
 
 
-def init_db_dates(cursor, dates: list[str]):
+def init_tbl_dates(cursor: sqlite3.Cursor, dates: list[str]):
+    """Create `dates` table
+
+    Args:
+        cursor: sqlite3 Cursor
+        dates: list of dates
+    """
     for date in dates:
         cursor.execute(f"INSERT INTO {TABLES['dates']}(date) VALUES (?)", (date,))
 
 
-def init_db_entries(cursor, entries: dict[str, list[Entry]]):
-    for filename, entry_list in entries.items():
-        filename = Path(filename).name
+def init_tbl_entries(cursor: sqlite3.Cursor, entries: dict[Document, list[Entry]]):
+    """Create `entries` table
+
+    Args:
+        cursor: sqlite3 Cursor
+        entries: Document-Entry dictionary
+    """
+    for doc, entry_list in entries.items():
+        filename = Path(doc.filename).name
         results = cursor.execute(
             f"SELECT id FROM {TABLES['documents']} WHERE filename == :d",
             {"d": filename},
@@ -46,9 +64,15 @@ def init_db_entries(cursor, entries: dict[str, list[Entry]]):
                 )
 
 
-def init_db_links_docs_dates(cursor, links: dict[str, list[str]]):
-    for filename, dates in links.items():
-        filename = Path(filename).name
+def init_tbl_links_docs_dates(cursor: sqlite3.Cursor, links: dict[Document, list[str]]):
+    """Create `links_docs_dates` table
+
+    Args:
+        cursor: sqlite3 Cursor
+        links: Document-Date dictionary
+    """
+    for doc, dates in links.items():
+        filename = Path(doc.filename).name
         results = cursor.execute(
             f"SELECT id FROM {TABLES['documents']} WHERE filename == :d",
             {"d": filename},
@@ -67,9 +91,15 @@ def init_db_links_docs_dates(cursor, links: dict[str, list[str]]):
                     )
 
 
-def init_db_links_docs_docs(cursor, links: dict[str, list[str]]):
-    for from_file, to_files in links.items():
-        from_file = Path(from_file).name
+def init_tbl_links_docs_docs(cursor: sqlite3.Cursor, links: dict[Document, list[str]]):
+    """Create `links_docs_docs` table
+
+    Args:
+        cursor: sqlite3 Cursor
+        links: Document-Links dictionary
+    """
+    for doc, to_files in links.items():
+        from_file = Path(doc.filename).name
         results = cursor.execute(
             f"SELECT id FROM {TABLES['documents']} WHERE filename == :d",
             {"d": from_file},
@@ -92,6 +122,15 @@ def init_db_links_docs_docs(cursor, links: dict[str, list[str]]):
 
 
 def make_dates_list(start: str, end: str):
+    """List dates between start and end
+
+    Args:
+        start: start date
+        end: end date
+
+    Returns:
+        list of dates
+    """
     start_date = datetime.strptime(start, "%Y-%m-%d")
     end_date = datetime.strptime(end, "%Y-%m-%d")
     return [
@@ -113,18 +152,17 @@ if __name__ == "__main__":
     docs, links_docs_dates, links_docs_docs, entries = read_note_path(NOTES_PATH)
     dates = [d.strftime("%Y-%m-%d") for d in make_dates_list(MIN_DATE, MAX_DATE)]
 
-    db_conn = sqlite3.connect(DB_PATH)
-    with open(SCHEMA_PATH) as f:
-        db_conn.executescript(f.read())
-    cursor = db_conn.cursor()
-    init_db_dates(cursor, dates)
-    db_conn.commit()
-    init_db_documents(cursor, docs)
-    db_conn.commit()
-    init_db_entries(cursor, entries)
-    db_conn.commit()
-    init_db_links_docs_dates(cursor, links_docs_dates)
-    db_conn.commit()
-    init_db_links_docs_docs(cursor, links_docs_docs)
-    db_conn.commit()
-    db_conn.close()
+    with sqlite3.connect(DB_PATH) as db_conn:
+        with open(SCHEMA_PATH) as f:
+            db_conn.executescript(f.read())
+        cursor = db_conn.cursor()
+        init_tbl_dates(cursor, dates)
+        db_conn.commit()
+        init_tbl_documents(cursor, docs)
+        db_conn.commit()
+        init_tbl_entries(cursor, entries)
+        db_conn.commit()
+        init_tbl_links_docs_dates(cursor, links_docs_dates)
+        db_conn.commit()
+        init_tbl_links_docs_docs(cursor, links_docs_docs)
+        db_conn.commit()
