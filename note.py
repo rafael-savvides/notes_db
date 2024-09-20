@@ -59,8 +59,8 @@ def read_note_path(
             filename=str(file.relative_to(path)).replace("\\", "/"), date=date
         )
         entries[doc] = parse_to_entries(content)
-        links_docs_dates[doc] = find_dates(content)
-        links_docs_docs[doc] = find_md_links(content)
+        links_docs_dates[doc] = list(set(re.findall(REGEX_DATE, content)))
+        links_docs_docs[doc] = list(set(re.findall(REGEX_MDLINK, content)))
         docs.append(doc)
     return docs, links_docs_dates, links_docs_docs, entries
 
@@ -102,15 +102,3 @@ def guess_date(content: str, header: str = None, regex: str = REGEX_DATE):
     if date_in_content:
         return date_in_content.group().strip()
     return None
-
-
-def find_dates(text: str) -> list[str]:
-    """Find all dates in a text."""
-    x = re.findall(REGEX_DATE, text)
-    return list(set(x))
-
-
-def find_md_links(text: str) -> list[str]:
-    """Find all Markdown links in a text."""
-    x = re.findall(REGEX_MDLINK, text)
-    return list(set(x))
