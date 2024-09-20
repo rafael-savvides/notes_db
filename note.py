@@ -22,6 +22,7 @@ class Entry:
     """An entry in a markdown document."""
 
     # TODO What if there are no headers? Should the default header and content be ""?
+    # What exactly is an entry? A subsection with a date?
     header: str
     content: str
     date: str = None
@@ -65,28 +66,47 @@ def read_note_path(
     return docs, links_docs_dates, links_docs_docs, entries
 
 
-def header_lvl(x: str) -> int | None:
-    """Count how many # are at the start of the line."""
-    r = re.search("^#+ ", x)
+def header_lvl(line: str) -> int | None:
+    """Count hash characters (#) at the start of a string.
+
+    Args:
+        line: string
+
+    Returns:
+        number of # characters in the beginning of line
+        or None if no #
+    #TODO Why not return zero if no #?
+    """
+    r = re.search("^#+ ", line)
     return r.span()[1] if r else None
 
 
 def parse_to_entries(text: str) -> list[Entry]:
-    """Parse Markdown text into (header, contents)."""
+    """Parse Markdown text into Entries
+
+    An entry is a header and content:
+
+    - header: Markdown header defined by `#` at the start of a line.
+    - content: text between headers
+
+    If no `#` is found, then ...?
+    """
     lines = text.split("\n")
     lines_new = []
     accum = ""
     header = ""
     for line in lines:
         if header_lvl(line):
-            e = Entry(header, accum, guess_date(accum, header))
+            e = Entry(header=header, content=accum, date=guess_date(accum, header))
             if e.header or e.content:
                 lines_new.append(e)
             header = line
             accum = ""
         else:
             accum = accum + line
-    lines_new.append(Entry(header, accum, guess_date(accum, header)))
+    lines_new.append(
+        Entry(header=header, content=accum, date=guess_date(accum, header))
+    )
     return lines_new
 
 
