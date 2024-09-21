@@ -1,7 +1,6 @@
 # Initializes a sqlite datebase for a folder of Markdown files.
 # See schema.sql for the tables in the database.
 import sqlite3
-import os
 from note import read_note_path, Document, Entry
 from datetime import datetime, timedelta
 from pathlib import Path
@@ -23,10 +22,9 @@ def init_tbl_documents(cursor: sqlite3.Cursor, documents: list[Document]):
         documents: list of Documents
     """
     for doc in documents:
-        relative_path = str(doc.path.parent).replace("\\", "/")
         cursor.execute(
-            f"INSERT INTO {TABLES['documents']}(filename, date, relative_path) VALUES (?, ?, ?)",
-            (doc.path.name, doc.date, relative_path),
+            f"INSERT INTO {TABLES['documents']}(filename, relative_path) VALUES (?, ?)",
+            (doc.path.name, doc.path.parent.name.replace("\\", "/")),
         )
 
 
@@ -88,7 +86,9 @@ def init_tbl_links_docs_dates(cursor: sqlite3.Cursor, links: dict[Document, list
                     )
 
 
-def init_tbl_links_docs_docs(cursor: sqlite3.Cursor, links: dict[Document, list[str]]):
+def init_tbl_links_docs_docs(
+    cursor: sqlite3.Cursor, links: dict[Document, list[Document]]
+):
     """Create `links_docs_docs` table
 
     Args:
@@ -102,13 +102,12 @@ def init_tbl_links_docs_docs(cursor: sqlite3.Cursor, links: dict[Document, list[
             {"d": from_file},
         ).fetchall()
         if results:
-            from_doc_id = results[0][
-                0
-            ]  # First result, first element in tuple (i.e. id).
+            # doc id = first result, first element in tuple (i.e. id).
+            from_doc_id = results[0][0]
             for to_file in to_files:
                 results = cursor.execute(
                     f"SELECT id FROM {TABLES['documents']} WHERE filename == :d",
-                    {"d": to_file},
+                    {"d": to_file.path.name},
                 ).fetchall()
                 if results:
                     to_doc_id = results[0][0]

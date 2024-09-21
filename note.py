@@ -1,4 +1,3 @@
-import os
 import re
 from dataclasses import dataclass
 import re
@@ -15,11 +14,9 @@ class Document:
 
     Attributes:
         path: the document's path relative to a root folder
-        date: document date
     """
 
     path: Path
-    date: str = None
 
 
 @dataclass
@@ -50,40 +47,46 @@ class Entry:
 
 
 def read_note_path(
-    path: str,
+    path: str | Path,
 ) -> tuple[
     list[Document],
     dict[Document, list[str]],
-    dict[Document, list[str]],
+    dict[Document, list[Document]],
     dict[Document, list[Entry]],
 ]:
-    """Read all Markdown files in a folder
+    """Read all Markdown files in a folder recursively
 
     Args:
         path: Path to a folder with Markdown files.
 
     Returns:
         - a list of Documents
-        - an adjacency list {Document: [dates]}
-        - an adjacency list {Document: [md_links]}
-        - a dict of Entries, {Document: [Entries]}
+        - an adjacency list {Document: [date]}
+        - an adjacency list of linked documents {Document: [linked Document]}
+        - a dict of Entries, {Document: [Entry]}
     """
-    files = list(Path(path).glob("**/*.md"))
     docs = []
     links_docs_dates = {}
     links_docs_docs = {}
     entries = {}
-    for file in files:
+    for file in Path(path).glob("**/*.md"):
         with open(file, encoding="utf8") as f:
             content = f.read()
-        date = guess_date(content)
         # Using relative filename instead of basename to ensure unique keys.
         relative_filepath = Path(str(file.relative_to(path)).replace("\\", "/"))
-        doc = Document(path=relative_filepath, date=date)
+        doc = Document(path=relative_filepath)
+        docs.append(doc)
         entries[doc] = parse_to_entries(content)
         links_docs_dates[doc] = list(set(re.findall(REGEX_DATE, content)))
-        links_docs_docs[doc] = list(set(re.findall(REGEX_MDLINK, content)))
-        docs.append(doc)
+        links_docs_docs[doc] = [
+            Document(
+                # Make filepath relative to root path instead of doc.path.
+                path=(doc.path.parent / Path(filepath))
+                .resolve()
+                .relative_to(Path.cwd())
+            )
+            for filepath in list(set(re.findall(REGEX_MDLINK, content)))
+        ]
     return docs, links_docs_dates, links_docs_docs, entries
 
 
