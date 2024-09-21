@@ -57,8 +57,8 @@ def init_tbl_entries(cursor: sqlite3.Cursor, entries: dict[Document, list[Entry]
             doc_id = results[0][0]  # First result, first element in tuple (i.e. id).
             for entry in entry_list:
                 cursor.execute(
-                    f"INSERT INTO {TABLES['entries']}(doc_id, heading, content, date) VALUES (?, ?, ?, ?)",
-                    (doc_id, entry.heading, entry.content, entry.date),
+                    f"INSERT INTO {TABLES['entries']}(doc_id, heading, content, position, date) VALUES (?, ?, ?, ?, ?)",
+                    (doc_id, entry.heading, entry.content, entry.position, entry.date),
                 )
 
 
