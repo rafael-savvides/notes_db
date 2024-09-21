@@ -88,18 +88,23 @@ def read_note_path(
 
 
 def heading_lvl(line: str) -> int | None:
-    """Count hash characters (#) at the start of a string.
+    """Markdown heading level
 
     Args:
         line: string
 
     Returns:
-        number of # characters in the beginning of line
-        or None if no #
-    #TODO Why not return zero if no #?
+        number of # characters before a space in the beginning of line
+
+    Examples:
+
+    - `# asd`: 1
+    - `## asd`: 2
+    - `asd`: 0
+    - `#asd`: 0
     """
     r = re.search("^#+ ", line)
-    return r.span()[1] if r else None
+    return r.span()[1] - 1 if r else 0
 
 
 def parse_to_entries(text: str) -> list[Entry]:
