@@ -19,7 +19,7 @@ CREATE TABLE documents (
 CREATE TABLE entries (
 	id INTEGER PRIMARY KEY AUTOINCREMENT,
 	doc_id INTEGER NOT NULL, 
-	header TEXT,
+	heading TEXT,
 	content TEXT,
 	date TIMESTAMP,
 	FOREIGN KEY (doc_id) REFERENCES documents (id)

@@ -57,8 +57,8 @@ def init_tbl_entries(cursor: sqlite3.Cursor, entries: dict[Document, list[Entry]
             doc_id = results[0][0]  # First result, first element in tuple (i.e. id).
             for entry in entry_list:
                 cursor.execute(
-                    f"INSERT INTO {TABLES['entries']}(doc_id, header, content, date) VALUES (?, ?, ?, ?)",
-                    (doc_id, entry.header, entry.content, entry.date),
+                    f"INSERT INTO {TABLES['entries']}(doc_id, heading, content, date) VALUES (?, ?, ?, ?)",
+                    (doc_id, entry.heading, entry.content, entry.date),
                 )
 
 
@@ -140,8 +140,8 @@ if __name__ == "__main__":
     import sys
 
     NOTES_PATH = Path(sys.argv[1])
+    DB_PATH = Path(sys.argv[2]) if len(sys.argv) > 2 else "notes.db"
     SCHEMA_PATH = "schema.sql"
-    DB_PATH = os.getenv("NOTES_DB_PATH", "notes.db")
     MIN_DATE = "2000-01-01"
     MAX_DATE = str(datetime.now().date())
 
