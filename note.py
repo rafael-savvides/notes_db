@@ -108,37 +108,50 @@ def heading_lvl(line: str) -> int | None:
 
 
 def parse_to_entries(text: str) -> list[Entry]:
-    """Parse Markdown text into Entries"""
-    # TODO ensure position works as intended.
-    lines = text.split("\n")
-    lines_new = []
-    accum = ""
+    """Parse Markdown text into Entries
+
+    The text is split at markdown headings.
+
+    Args:
+        text: string of markdown text
+
+    Returns:
+        list of Entries
+
+    Known bugs:
+
+    - code comments inside a code block are parsed as headings
+    """
+    entries = []
+    content = ""
     heading = ""
     position = 0
-    for line in lines:
-        if heading_lvl(line):
-            e = Entry(
-                heading=heading,
-                content=accum,
-                position=position,
-                date=guess_date(accum, heading),
-            )
-            if e.heading or e.content:
-                lines_new.append(e)
+    for line in text.split("\n"):
+        line = line + "\n"
+        if heading_lvl(line) > 0:
+            if heading or content:
+                entries.append(
+                    Entry(
+                        heading=heading,
+                        content=content,
+                        position=position,
+                        date=guess_date(content, heading),
+                    )
+                )
+                position += 1
             heading = line
-            accum = ""
-            position += 1
+            content = ""
         else:
-            accum = accum + line
-    lines_new.append(
+            content = content + line
+    entries.append(
         Entry(
             heading=heading,
-            content=accum,
+            content=content,
             position=position,
-            date=guess_date(accum, heading),
+            date=guess_date(content, heading),
         )
     )
-    return lines_new
+    return entries
 
 
 def guess_date(
