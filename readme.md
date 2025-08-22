@@ -2,10 +2,9 @@
 
 Make a sqlite database of markdown files.
 
-```bash
-pipenv install 
-pipenv shell
+Run: 
 
+```sh
 python init_db.py [path_to_notes] [path_to_notes_db]
 ```
 
