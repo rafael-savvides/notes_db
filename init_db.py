@@ -1,9 +1,11 @@
 # Initializes a sqlite datebase for a folder of Markdown files.
 # See schema.sql for the tables in the database.
+import argparse
 import sqlite3
-from note import read_note_path, Document, Entry
 from datetime import datetime, timedelta
 from pathlib import Path
+
+from note import Document, Entry, read_note_path
 
 TABLES = {
     "documents": "documents",
@@ -12,6 +14,26 @@ TABLES = {
     "links_docs_dates": "links_docs_dates",
     "links_docs_docs": "links_docs_docs",
 }
+
+
+def init_db(notes_path, db_path, schema_path, min_date, max_date):
+    docs, links_docs_dates, links_docs_docs, entries = read_note_path(notes_path)
+    dates = [d.strftime("%Y-%m-%d") for d in make_dates_list(min_date, max_date)]
+
+    with sqlite3.connect(db_path) as db_conn:
+        with open(schema_path) as f:
+            db_conn.executescript(f.read())
+        cursor = db_conn.cursor()
+        init_tbl_dates(cursor, dates)
+        db_conn.commit()
+        init_tbl_documents(cursor, docs)
+        db_conn.commit()
+        init_tbl_entries(cursor, entries)
+        db_conn.commit()
+        init_tbl_links_docs_dates(cursor, links_docs_dates)
+        db_conn.commit()
+        init_tbl_links_docs_docs(cursor, links_docs_docs)
+        db_conn.commit()
 
 
 def init_tbl_documents(cursor: sqlite3.Cursor, documents: list[Document]):
@@ -134,30 +156,22 @@ def make_dates_list(start: str, end: str):
     ]
 
 
+def parse_args():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--notes_path", type=str)
+    parser.add_argument("--db_path", type=str, default="notes.db")
+    parser.add_argument("--min_date", type=str, default="2000-01-01")
+    parser.add_argument("--max_date", type=str, default=str(datetime.now().date()))
+    return parser.parse_args()
+
+
 if __name__ == "__main__":
-    import os
-    import sys
+    args = parse_args()
 
-    NOTES_PATH = Path(sys.argv[1])
-    DB_PATH = Path(sys.argv[2]) if len(sys.argv) > 2 else "notes.db"
-    SCHEMA_PATH = "schema.sql"
-    MIN_DATE = "2000-01-01"
-    MAX_DATE = str(datetime.now().date())
-
-    docs, links_docs_dates, links_docs_docs, entries = read_note_path(NOTES_PATH)
-    dates = [d.strftime("%Y-%m-%d") for d in make_dates_list(MIN_DATE, MAX_DATE)]
-
-    with sqlite3.connect(DB_PATH) as db_conn:
-        with open(SCHEMA_PATH) as f:
-            db_conn.executescript(f.read())
-        cursor = db_conn.cursor()
-        init_tbl_dates(cursor, dates)
-        db_conn.commit()
-        init_tbl_documents(cursor, docs)
-        db_conn.commit()
-        init_tbl_entries(cursor, entries)
-        db_conn.commit()
-        init_tbl_links_docs_dates(cursor, links_docs_dates)
-        db_conn.commit()
-        init_tbl_links_docs_docs(cursor, links_docs_docs)
-        db_conn.commit()
+    init_db(
+        notes_path=args.notes_path,
+        db_path=args.db_path,
+        schema_path="schema.sql",
+        min_date=args.min_date,
+        max_date=args.max_date,
+    )
