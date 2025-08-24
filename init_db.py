@@ -159,7 +159,9 @@ def make_dates_list(start: str, end: str):
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("--notes_path", type=str)
-    parser.add_argument("--db_path", type=str, default="notes.db")
+    parser.add_argument(
+        "--db_path", type=str, default=str(Path(__file__).resolve().parent / "notes.db")
+    )
     parser.add_argument("--min_date", type=str, default="2000-01-01")
     parser.add_argument("--max_date", type=str, default=str(datetime.now().date()))
     return parser.parse_args()
