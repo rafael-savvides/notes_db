@@ -169,9 +169,9 @@ if __name__ == "__main__":
     args = parse_args()
 
     init_db(
-        notes_path=args.notes_path,
+        notes_path=Path(args.notes_path).resolve(),
         db_path=args.db_path,
-        schema_path="schema.sql",
+        schema_path=Path(__file__).parent.resolve() / "schema.sql",
         min_date=args.min_date,
         max_date=args.max_date,
     )
